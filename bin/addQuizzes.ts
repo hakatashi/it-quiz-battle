@@ -8,22 +8,23 @@ import {getFirestore, type CollectionReference} from 'firebase-admin/firestore';
 import {getStorage} from 'firebase-admin/storage';
 
 const app = initializeApp({
-	storageBucket: 'hakatashi.appspot.com',
+	projectId: 'it-quiz-battle',
+	storageBucket: 'it-quiz-battle.firebasestorage.app',
 });
 const db = getFirestore(app);
 const Quizzes = db.collection('quizzes') as CollectionReference<Quiz>;
 
 const storage = getStorage(app);
 
+const textToSpeechClient = new GoogleCloudTextToSpeech.TextToSpeechClient();
+
 const IT_QUIZ_URL =
 	'https://github.com/hakatashi/it-quiz/releases/download/1.7.0/it-quiz-v1.7.0.json';
-
-const client = new GoogleCloudTextToSpeech.TextToSpeechClient();
 
 const getSpeech = async (ssml: string, voiceType: string) => {
 	const speed = 0.9;
 
-	const [response] = await client.synthesizeSpeech({
+	const [response] = await textToSpeechClient.synthesizeSpeech({
 		input: {
 			ssml,
 		},
@@ -130,11 +131,7 @@ const fetchQuiz = async () => {
 
 	const quiz = data[0];
 
-	console.log('Generating audio for quiz 0');
-
 	const {clauses, ssml} = await formatQuizToSsml(quiz.question);
-
-	console.log(`Question: ${quiz.question}`);
 
 	const {data: audioData, timepoints} = await getSpeech(
 		ssml,
@@ -155,6 +152,7 @@ const fetchQuiz = async () => {
 		description: quiz.description ?? null,
 		clauses,
 		timepoints,
+		ssml,
 	});
 
 	return data;

@@ -1,5 +1,7 @@
-import type {DocumentData, FirestoreError, Timestamp} from 'firebase/firestore';
+import type {DocumentData, FirestoreError} from 'firebase/firestore';
 import type {protos} from '@google-cloud/text-to-speech';
+
+export type Timepoint = protos.google.cloud.texttospeech.v1beta1.ITimepoint;
 
 export interface UseFireStoreReturn<T> {
 	data: T;
@@ -14,5 +16,6 @@ export interface Quiz extends DocumentData {
 	alternativeAnswers: string[];
 	description: string | null;
 	clauses: string[];
-	timepoints: protos.google.cloud.texttospeech.v1beta1.ITimepoint[];
+	timepoints: Timepoint[];
+	ssml: string;
 }

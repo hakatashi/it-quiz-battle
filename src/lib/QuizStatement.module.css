@@ -1,0 +1,8 @@
+.quiz {
+	font-size: 2rem;
+	font-weight: bold;
+}
+
+.quiz_token {
+	display: inline-block;
+}

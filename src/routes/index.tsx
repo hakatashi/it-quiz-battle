@@ -1,54 +1,29 @@
-import {createSignal, type Component, type JSX} from 'solid-js';
-import {auth, Tasks} from '~/lib/firebase';
-import {useAuth, useFirestore} from 'solid-firebase';
-import Collection from '~/lib/Collection';
-import {addDoc, orderBy, query, Timestamp} from 'firebase/firestore';
+import type {Component} from 'solid-js';
+import {Quizzes} from '~/lib/firebase';
+import {useFirestore} from 'solid-firebase';
+import {doc} from 'firebase/firestore';
 
 import styles from './index.module.css';
+import QuizStatement from '~/lib/QuizStatement';
+import Doc from '~/lib/Doc';
 
 const Index: Component = () => {
-	const tasks = useFirestore(query(Tasks, orderBy('createdAt', 'asc')));
-	const authState = useAuth(auth);
-	const [newTask, setNewTask] = createSignal('');
-
-	const onSubmitTask: JSX.EventHandler<HTMLFormElement, SubmitEvent> = async (
-		event,
-	) => {
-		event.preventDefault();
-		const form = event.currentTarget;
-
-		if (!(authState.data && form)) {
-			return;
-		}
-
-		await addDoc(Tasks, {
-			task: newTask(),
-			uid: authState.data.uid,
-			createdAt: Timestamp.now(),
-		});
-
-		setNewTask('');
-	};
+	const quiz = useFirestore(doc(Quizzes, 'it-000000'));
 
 	return (
-		<ul class={styles.tasks}>
-			<Collection data={tasks}>
-				{(taskData) => <li class={styles.task}>{taskData.task}</li>}
-			</Collection>
-			<li class={styles.addTask}>
-				<form onSubmit={onSubmitTask}>
-					<input
-						type="text"
-						name="task"
-						value={newTask()}
-						onChange={(event) => setNewTask(event.currentTarget?.value)}
-					/>
-					<button type="submit" disabled={!authState.data}>
-						Add Task
-					</button>
-				</form>
-			</li>
-		</ul>
+		<div>
+			<Doc data={quiz}>
+				{(data) => (
+					<div>
+						<QuizStatement
+							clauses={data.clauses}
+							ellapsedTime={3.5}
+							timepoints={data.timepoints}
+						/>
+					</div>
+				)}
+			</Doc>
+		</div>
 	);
 };
 
