@@ -56,6 +56,9 @@ const isFuzokugo = (token: KuromojiToken) =>
 	token.pos_detail_1 === '接尾' ||
 	token.pos_detail_1 === '非自立';
 
+const CLAUSE_COMPONENTS_END_REGEX = /[、。?？]$/;
+
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: Hard to refactor
 const formatQuizToSsml = async (text: string) => {
 	const normalizedQuestion = text
 		.replace(/\(.+?\)/g, '')
@@ -96,7 +99,7 @@ const formatQuizToSsml = async (text: string) => {
 		} else {
 			components[components.length - 1].push(clause);
 		}
-		isPrevComponentEnd = Boolean(clause.match(/[、。?？]$/));
+		isPrevComponentEnd = Boolean(clause.match(CLAUSE_COMPONENTS_END_REGEX));
 	}
 
 	let spannedQuestionText = '';

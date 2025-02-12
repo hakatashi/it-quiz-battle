@@ -1,6 +1,5 @@
-import {createEffect} from 'solid-js';
 import styles from './QuizStatement.module.css';
-import type {Timepoint} from './schema';
+import type {Timepoint} from './schema.ts';
 
 interface QuizStatementProps {
 	clauses: string[];
@@ -9,10 +8,6 @@ interface QuizStatementProps {
 }
 
 const QuizStatement = (props: QuizStatementProps) => {
-	createEffect(() => {
-		console.log(props.timepoints);
-	});
-
 	return (
 		<div class={styles.quiz}>
 			{props.clauses.map((token) => (

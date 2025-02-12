@@ -2,8 +2,6 @@ import type {Component} from 'solid-js';
 import {Quizzes} from '~/lib/firebase';
 import {useFirestore} from 'solid-firebase';
 import {doc} from 'firebase/firestore';
-
-import styles from './index.module.css';
 import QuizStatement from '~/lib/QuizStatement';
 import Doc from '~/lib/Doc';
 
