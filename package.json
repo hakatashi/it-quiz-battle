@@ -1,5 +1,5 @@
 {
-	"name": "solid-start-firebase-template",
+	"name": "it-quiz-battle",
 	"type": "module",
 	"scripts": {
 		"dev": "concurrently \"npm run dev:server\" \"npm run dev:firebase\" \"npm run functions:build:watch\" --names server,firebase,functions",
@@ -18,6 +18,7 @@
 		"install": "cd functions && npm install"
 	},
 	"dependencies": {
+		"@google-cloud/text-to-speech": "^5.8.0",
 		"@solidjs/router": "^0.15.3",
 		"@solidjs/start": "^1.0.11",
 		"concurrently": "^9.1.2",
@@ -32,11 +33,16 @@
 	},
 	"devDependencies": {
 		"@biomejs/biome": "^1.9.4",
+		"@google-cloud/firestore": "^7.11.0",
 		"@solidjs/testing-library": "^0.8.10",
 		"@testing-library/jest-dom": "^6.6.3",
 		"@testing-library/user-event": "^14.6.1",
+		"dotenv": "^16.4.7",
+		"firebase-admin": "^13.1.0",
 		"husky": "^9.1.7",
 		"jsdom": "^26.0.0",
+		"kuromojin": "^3.0.0",
+		"tsx": "^4.19.2",
 		"vitest": "^3.0.5",
 		"wait-on": "^8.0.2"
 	}

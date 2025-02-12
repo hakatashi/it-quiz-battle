@@ -7,7 +7,7 @@ import {
 	collection,
 	type CollectionReference,
 } from 'firebase/firestore';
-import type {Task} from './schema.ts';
+import type {Quiz} from './schema.ts';
 
 const firebaseConfigResponse = await fetch('/__/firebase/init.json');
 const firebaseConfig = await firebaseConfigResponse.json();
@@ -23,8 +23,8 @@ if (import.meta.env.DEV && !isServer) {
 	connectAuthEmulator(auth, 'http://localhost:9099');
 }
 
-const Tasks = collection(db, 'tasks') as CollectionReference<Task>;
+const Quizzes = collection(db, 'quizzes') as CollectionReference<Quiz>;
 
 await signInAnonymously(auth);
 
-export {app as default, auth, db, Tasks};
+export {app as default, auth, db, Quizzes};

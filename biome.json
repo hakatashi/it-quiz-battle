@@ -11,7 +11,8 @@
 				"noDefaultExport": "off"
 			},
 			"correctness": {
-				"noNodejsModules": "off"
+				"noNodejsModules": "off",
+				"useJsxKeyInIterable": "off"
 			}
 		}
 	},
