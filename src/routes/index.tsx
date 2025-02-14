@@ -9,7 +9,8 @@ import Doc from '~/lib/Doc';
 import styles from './index.module.css';
 
 const Index: Component = () => {
-	const quizIndex = 1000 + Math.floor(Math.random() * 30);
+	// const quizIndex = 1000 + Math.floor(Math.random() * 30);
+	const quizIndex = 1015;
 	const quizId = `it-${quizIndex.toString().padStart(6, '0')}`;
 	const quiz = useFirestore(doc(Quizzes, quizId));
 	const quizQuestionDataUrl = useDownloadURL(

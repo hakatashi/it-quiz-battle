@@ -1,7 +1,6 @@
 import {createMemo, Show} from 'solid-js';
 import styles from './QuizStatement.module.css';
 import type {Timepoint} from './schema.ts';
-import {clamp} from 'lodash-es';
 
 interface QuizStatementProps {
 	clauses: string[];
@@ -17,7 +16,7 @@ const extractMarkIndex = (markName: string | null | undefined) =>
 interface ClauseInformation {
 	text: string;
 	duration: number;
-	ellapsedTime: number;
+	hiddenRatio: number;
 }
 
 const QuizStatement = (props: QuizStatementProps) => {
@@ -34,20 +33,29 @@ const QuizStatement = (props: QuizStatementProps) => {
 
 		for (const timepoint of sortedTimepoints()) {
 			const markIndex = extractMarkIndex(timepoint.markName);
+			const timeSeconds = timepoint.timeSeconds ?? 0;
 			const clause = props.clauses
 				.slice(previousMarkIndex + 1, markIndex + 1)
 				.join('')
 				.replaceAll(' ', '\xa0');
 
-			const duration = (timepoint.timeSeconds ?? 0) - offset;
+			const duration = timeSeconds - offset;
+			let hiddenRatio = 1;
+			if (props.ellapsedTime > timeSeconds) {
+				hiddenRatio = 0;
+			} else if (props.ellapsedTime < offset) {
+				hiddenRatio = 1;
+			} else {
+				hiddenRatio = 1 - (props.ellapsedTime - offset) / duration;
+			}
 
 			outputs.push({
 				text: clause,
 				duration,
-				ellapsedTime: clamp(props.ellapsedTime - offset, 0, duration),
+				hiddenRatio,
 			});
 
-			offset = timepoint.timeSeconds ?? 0;
+			offset = timeSeconds;
 			previousMarkIndex = markIndex;
 		}
 
@@ -57,15 +65,14 @@ const QuizStatement = (props: QuizStatementProps) => {
 	return (
 		<div class={styles.quiz}>
 			{clauseInformation().map((clauseInfo, clauseIndex) => (
-				<Show when={clauseInfo.ellapsedTime > 0}>
+				<Show when={clauseInfo.hiddenRatio < 1}>
 					<Show when={clauseIndex !== 0}>
 						<wbr />
 					</Show>
 					<span
 						class={styles.quiz_clause}
 						style={{
-							'--hidden-ratio':
-								1 - clauseInfo.ellapsedTime / clauseInfo.duration,
+							'--hidden-ratio': clauseInfo.hiddenRatio,
 						}}
 					>
 						{clauseInfo.text}
