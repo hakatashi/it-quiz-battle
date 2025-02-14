@@ -57,7 +57,10 @@ const QuizStatement = (props: QuizStatementProps) => {
 					</Show>
 					<span
 						class={styles.quiz_clause}
-						style={`--hidden-ratio: ${1 - clauseInfo.ellapsedTime / clauseInfo.duration};`}
+						style={{
+							'--hidden-ratio':
+								1 - clauseInfo.ellapsedTime / clauseInfo.duration,
+						}}
 					>
 						{clauseInfo.text}
 					</span>
