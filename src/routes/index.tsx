@@ -7,9 +7,10 @@ import QuizStatement from '~/lib/QuizStatement';
 import Doc from '~/lib/Doc';
 
 const Index: Component = () => {
-	const quiz = useFirestore(doc(Quizzes, 'it-000000'));
+	const quizId = 'it-001000';
+	const quiz = useFirestore(doc(Quizzes, quizId));
 	const quizQuestionDataUrl = useDownloadURL(
-		ref(storage, 'quiz/it-000000/question.mp3'),
+		ref(storage, `quiz/${quizId}/question.mp3`),
 	);
 
 	const [ellapsedTime, setEllapsedTime] = createSignal(0);
@@ -18,8 +19,9 @@ const Index: Component = () => {
 
 	onMount(() => {
 		const interval = setInterval(() => {
-			setEllapsedTime((prev) => prev + 0.1);
-		}, 100);
+			const currentTime = audioElement.currentTime - 0.2;
+			setEllapsedTime(currentTime);
+		}, 30);
 
 		audioElement.play();
 

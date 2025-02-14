@@ -11,6 +11,7 @@ export interface UseFireStoreReturn<T> {
 
 export interface Quiz extends DocumentData {
 	type: 'it' | 'news';
+	index: number;
 	question: string;
 	answer: string;
 	alternativeAnswers: string[];

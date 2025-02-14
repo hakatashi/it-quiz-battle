@@ -131,8 +131,10 @@ const formatQuizToSsml = async (text: string) => {
 const fetchQuiz = async () => {
 	const response = await fetch(IT_QUIZ_URL);
 	const data = await response.json();
+	const quizIndex = 1000;
+	const quizId = `it-${quizIndex.toString().padStart(6, '0')}`;
 
-	const quiz = data[0];
+	const quiz = data[quizIndex];
 
 	const {clauses, ssml} = await formatQuizToSsml(quiz.question);
 
@@ -145,10 +147,11 @@ const fetchQuiz = async () => {
 		throw new Error('timepoints is undefined or null');
 	}
 
-	await storage.bucket().file('quiz/it-000000/question.mp3').save(audioData);
+	await storage.bucket().file(`quiz/${quizId}/question.mp3`).save(audioData);
 
-	await Quizzes.doc('it-000000').set({
+	await Quizzes.doc(quizId).set({
 		type: 'it',
+		index: quizIndex,
 		question: quiz.question,
 		answer: quiz.answer,
 		alternativeAnswers: quiz.alternativeAnswers ?? [],
