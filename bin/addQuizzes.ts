@@ -6,6 +6,9 @@ import type {Quiz} from '~/lib/schema';
 import {initializeApp} from 'firebase-admin/app';
 import {getFirestore, type CollectionReference} from 'firebase-admin/firestore';
 import {getStorage} from 'firebase-admin/storage';
+import {range} from 'lodash-es';
+
+const logger = console;
 
 const app = initializeApp({
 	projectId: 'it-quiz-battle',
@@ -131,37 +134,39 @@ const formatQuizToSsml = async (text: string) => {
 const fetchQuiz = async () => {
 	const response = await fetch(IT_QUIZ_URL);
 	const data = await response.json();
-	const quizIndex = 1000;
-	const quizId = `it-${quizIndex.toString().padStart(6, '0')}`;
 
-	const quiz = data[quizIndex];
+	for (const quizIndex of range(1000, 1030)) {
+		logger.log(`Processing quiz ${quizIndex}`);
 
-	const {clauses, ssml} = await formatQuizToSsml(quiz.question);
+		const quizId = `it-${quizIndex.toString().padStart(6, '0')}`;
 
-	const {data: audioData, timepoints} = await getSpeech(
-		ssml,
-		'ja-JP-Neural2-D',
-	);
+		const quiz = data[quizIndex];
 
-	if (timepoints === undefined || timepoints === null) {
-		throw new Error('timepoints is undefined or null');
+		const {clauses, ssml} = await formatQuizToSsml(quiz.question);
+
+		const {data: audioData, timepoints} = await getSpeech(
+			ssml,
+			'ja-JP-Neural2-D',
+		);
+
+		if (timepoints === undefined || timepoints === null) {
+			throw new Error('timepoints is undefined or null');
+		}
+
+		await storage.bucket().file(`quiz/${quizId}/question.mp3`).save(audioData);
+
+		await Quizzes.doc(quizId).set({
+			type: 'it',
+			index: quizIndex,
+			question: quiz.question,
+			answer: quiz.answer,
+			alternativeAnswers: quiz.alternativeAnswers ?? [],
+			description: quiz.description ?? null,
+			clauses,
+			timepoints,
+			ssml,
+		});
 	}
-
-	await storage.bucket().file(`quiz/${quizId}/question.mp3`).save(audioData);
-
-	await Quizzes.doc(quizId).set({
-		type: 'it',
-		index: quizIndex,
-		question: quiz.question,
-		answer: quiz.answer,
-		alternativeAnswers: quiz.alternativeAnswers ?? [],
-		description: quiz.description ?? null,
-		clauses,
-		timepoints,
-		ssml,
-	});
-
-	return data;
 };
 
 fetchQuiz();
