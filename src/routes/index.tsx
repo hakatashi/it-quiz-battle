@@ -6,6 +6,8 @@ import {ref} from 'firebase/storage';
 import QuizStatement from '~/lib/QuizStatement';
 import Doc from '~/lib/Doc';
 
+import styles from './index.module.css';
+
 const Index: Component = () => {
 	const quizId = 'it-001000';
 	const quiz = useFirestore(doc(Quizzes, quizId));
@@ -41,7 +43,7 @@ const Index: Component = () => {
 	});
 
 	return (
-		<div>
+		<div class={styles.content}>
 			<h1>ITクイズ</h1>
 			<audio controls={true} ref={audioElement}>
 				<source src={quizQuestionDataUrl()} type="audio/mpeg" />
