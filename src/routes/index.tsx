@@ -30,6 +30,7 @@ const Index: Component = () => {
 
 	return (
 		<div>
+			<h1>ITクイズ</h1>
 			<audio controls={true} ref={audioElement}>
 				<source src={quizQuestionDataUrl()} type="audio/mpeg" />
 				<track kind="captions" />

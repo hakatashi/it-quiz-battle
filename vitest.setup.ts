@@ -9,6 +9,7 @@ const fetchMock = vi.fn<typeof fetch>((...args) => {
 				JSON.stringify({
 					apiKey: 'fakeApiKey',
 					projectId: 'it-quiz-battle',
+					storageBucket: 'it-quiz-battle.firebasestorage.app',
 				}),
 			),
 		);
