@@ -17,15 +17,27 @@ const Index: Component = () => {
 
 	let audioElement!: HTMLAudioElement;
 
+	const onAudioTimeUpdate = () => {
+		const currentTime = audioElement.currentTime - 0.2;
+		setEllapsedTime(currentTime);
+	};
+
 	onMount(() => {
 		const interval = setInterval(() => {
-			const currentTime = audioElement.currentTime - 0.2;
-			setEllapsedTime(currentTime);
+			onAudioTimeUpdate();
 		}, 30);
 
 		audioElement.play();
+		audioElement.addEventListener('timeupdate', onAudioTimeUpdate);
+		audioElement.addEventListener('ended', onAudioTimeUpdate);
+		audioElement.addEventListener('pause', onAudioTimeUpdate);
 
-		return () => clearInterval(interval);
+		return () => {
+			clearInterval(interval);
+			audioElement.removeEventListener('timeupdate', onAudioTimeUpdate);
+			audioElement.removeEventListener('ended', onAudioTimeUpdate);
+			audioElement.removeEventListener('pause', onAudioTimeUpdate);
+		};
 	});
 
 	return (
