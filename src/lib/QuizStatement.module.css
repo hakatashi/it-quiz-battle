@@ -9,7 +9,7 @@
 }
 
 .quiz_clause::after {
-	content: attr(data-content);
+	content: '';
 	display: inline-block;
 	position: absolute;
 	top: 0;
