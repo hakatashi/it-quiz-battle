@@ -21,7 +21,7 @@ const Index: Component = () => {
 	let audioElement!: HTMLAudioElement;
 
 	const onAudioTimeUpdate = () => {
-		const currentTime = audioElement.currentTime - 0.2;
+		const currentTime = audioElement.currentTime;
 		setEllapsedTime(currentTime);
 	};
 
