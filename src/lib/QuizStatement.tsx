@@ -29,11 +29,16 @@ const QuizStatement = (props: QuizStatementProps) => {
 
 	const clauseInformation = createMemo(() => {
 		const outputs: ClauseInformation[] = [];
+		let previousMarkIndex = -1;
 		let offset = 0;
 
 		for (const timepoint of sortedTimepoints()) {
 			const markIndex = extractMarkIndex(timepoint.markName);
-			const clause = props.clauses[markIndex];
+			const clause = props.clauses
+				.slice(previousMarkIndex + 1, markIndex + 1)
+				.join('')
+				.replaceAll(' ', '\xa0');
+
 			const duration = (timepoint.timeSeconds ?? 0) - offset;
 
 			outputs.push({
@@ -43,6 +48,7 @@ const QuizStatement = (props: QuizStatementProps) => {
 			});
 
 			offset = timepoint.timeSeconds ?? 0;
+			previousMarkIndex = markIndex;
 		}
 
 		return outputs;
