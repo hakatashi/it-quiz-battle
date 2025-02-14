@@ -92,7 +92,7 @@ jobs:
         with:
           args: deploy --except hosting
         env:
-          FIREBASE_TOKEN: "${{ secrets.FIREBASE_TOKEN }}"
+          GCP_SA_KEY: "${{ secrets.FIREBASE_SERVICE_ACCOUNT_IT_QUIZ_BATTLE }}"
           ESLINT_USE_FLAT_CONFIG: "false"
 
   deploy_hosting:
