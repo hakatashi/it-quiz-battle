@@ -31,6 +31,7 @@ Thumbs.db
 # Firebase
 .firebase
 *.log
+emulators
 
 *.mp3
 google_application_credentials*
