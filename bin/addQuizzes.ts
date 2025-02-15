@@ -62,10 +62,18 @@ const isFuzokugo = (token: KuromojiToken) =>
 const CLAUSE_COMPONENTS_END_REGEX = /[、。?？]$/;
 
 // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: Hard to refactor
-const formatQuizToSsml = async (text: string) => {
+export const formatQuizToSsml = async (text: string) => {
 	const normalizedQuestion = text
-		.replace(/\(.+?\)/g, '')
-		.replace(/（.+?）/g, '');
+		.replaceAll(
+			/<ruby><rb>(.+?)<\/rb><rp>.+?<\/rp><rt>(.+?)<\/rt><rp>.+?<\/rp><\/ruby>/g,
+			'<sub alias="$2">$1</sub>',
+		)
+		.replaceAll(
+			/<em>(.+?)<\/em>/g,
+			'<emphasis level="strong"><prosody pitch="+3st">$1</prosody></emphasis>',
+		)
+		.replaceAll(/\(.+?\)/g, '')
+		.replaceAll(/（.+?）/g, '');
 
 	const tokens = await tokenize(normalizedQuestion);
 
@@ -109,21 +117,11 @@ const formatQuizToSsml = async (text: string) => {
 	let offset = 0;
 
 	for (const component of components) {
-		const componentText = component.join('');
-		// eslint-disable-next-line no-loop-func
 		const spannedText = component
 			.map((clause, index) => `${clause}<mark name="c${offset + index}"/>`)
 			.join('');
 		offset += component.length;
-		if (
-			componentText.endsWith('すが、') ||
-			componentText.endsWith('たが、') ||
-			componentText.endsWith('対し、')
-		) {
-			spannedQuestionText += `<emphasis level="strong"><prosody pitch="+3st">${spannedText}</prosody></emphasis>`;
-		} else {
-			spannedQuestionText += spannedText;
-		}
+		spannedQuestionText += spannedText;
 	}
 
 	const ssml = `<speak>${spannedQuestionText}</speak>`;
@@ -135,10 +133,16 @@ const fetchQuiz = async () => {
 	const response = await fetch(IT_QUIZ_URL);
 	const data = await response.json();
 
-	for (const quizIndex of range(1000, 1030)) {
-		logger.log(`Processing quiz ${quizIndex}`);
-
+	for (const quizIndex of range(1013, 1014)) {
 		const quizId = `it-${quizIndex.toString().padStart(6, '0')}`;
+
+		const quizDoc = await Quizzes.doc(quizId).get();
+		if (quizDoc.exists) {
+			logger.log(`Quiz ${quizIndex} already exists`);
+			continue;
+		}
+
+		logger.log(`Processing quiz ${quizIndex}`);
 
 		const quiz = data[quizIndex];
 
@@ -169,4 +173,6 @@ const fetchQuiz = async () => {
 	}
 };
 
-fetchQuiz();
+if (require.main === module) {
+	fetchQuiz();
+}
