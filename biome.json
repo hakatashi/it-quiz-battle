@@ -17,7 +17,14 @@
 		}
 	},
 	"files": {
-		"ignore": ["node_modules", "public", ".output", ".vinxi", "functions/lib"]
+		"ignore": [
+			"node_modules",
+			"public",
+			".output",
+			".vinxi",
+			"functions/lib",
+			"vitest-report"
+		]
 	},
 	"javascript": {
 		"formatter": {

@@ -33,6 +33,9 @@ Thumbs.db
 *.log
 emulators
 
-*.mp3
+# Vitest Report
+vitest-report
+
+# Credentials
 google_application_credentials*
 it-quiz-battle-firebase-adminsdk-*.json
