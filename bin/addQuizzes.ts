@@ -6,7 +6,7 @@ import type {Quiz} from '~/lib/schema';
 import {initializeApp} from 'firebase-admin/app';
 import {getFirestore, type CollectionReference} from 'firebase-admin/firestore';
 import {getStorage} from 'firebase-admin/storage';
-import {escapeRegExp, range} from 'lodash-es';
+import {clamp, escapeRegExp, range} from 'lodash-es';
 import {fileURLToPath} from 'node:url';
 
 const logger = console;
@@ -80,6 +80,151 @@ const isMapEqual = <K, V>(map1: Map<K, V>, map2: Map<K, V>) => {
 	return true;
 };
 
+const SSML_EMPHASIS_START = '<emphasis level="strong"><prosody pitch="+3st">';
+const SSML_EMPHASIS_END = '</prosody></emphasis>';
+
+const postprocessClauses = ({
+	clauses,
+	mode,
+	rubyBaseTexts,
+	rubyBaseTextIndexes,
+	rubyBaseTextOccurences,
+	emphasizedRanges,
+}: {
+	clauses: string[];
+	mode: 'html' | 'ssml';
+	rubyBaseTexts: Set<string>;
+	rubyBaseTextIndexes: Map<string, Map<number, string>>;
+	rubyBaseTextOccurences: Map<string, number>;
+	emphasizedRanges: [number, number][];
+}) => {
+	const rubyBaseTextOccurencesInClauses = new Map<string, number>(
+		Array.from(rubyBaseTexts).map((baseText) => [baseText, 0]),
+	);
+	const processedClauses: string[] = [];
+	let offset = 0;
+
+	for (const clause of clauses) {
+		let processedClause = clause;
+
+		if (mode === 'html') {
+			const emphasizedRangesInClause = emphasizedRanges
+				.map(([start, end]) => [
+					clamp(start - offset, 0, clause.length),
+					clamp(end - offset, 0, clause.length),
+				])
+				.filter(([start, end]) => start !== end);
+
+			let emphasizedClause = '';
+			let emphasizedOffset = 0;
+			for (const [start, end] of emphasizedRangesInClause) {
+				const intro = clause.slice(emphasizedOffset, start);
+				const emphasizedText = clause.slice(start, end);
+				emphasizedClause += `${intro}<em>${emphasizedText}</em>`;
+				emphasizedOffset = end;
+			}
+			emphasizedClause += clause.slice(emphasizedOffset);
+
+			processedClause = emphasizedClause;
+		} else {
+			let emphasizedClause = '';
+			let emphasizedOffset = 0;
+
+			for (const [start, end] of emphasizedRanges) {
+				if (offset <= start && start < offset + clause.length) {
+					const intro = clause.slice(emphasizedOffset, start - offset);
+					emphasizedClause += `${intro}${SSML_EMPHASIS_START}`;
+					emphasizedOffset = start - offset;
+				}
+				if (offset <= end && end < offset + clause.length) {
+					const emphasizedText = clause.slice(emphasizedOffset, end - offset);
+					emphasizedClause += `${emphasizedText}${SSML_EMPHASIS_END}`;
+					emphasizedOffset = end - offset;
+				}
+			}
+			emphasizedClause += clause.slice(emphasizedOffset);
+
+			processedClause = emphasizedClause;
+		}
+
+		for (const rubyBaseText of rubyBaseTexts) {
+			processedClause = processedClause.replace(
+				new RegExp(escapeRegExp(rubyBaseText), 'g'),
+				(match) => {
+					const index = increment(
+						rubyBaseTextOccurencesInClauses,
+						rubyBaseText,
+					);
+					const rubyText = rubyBaseTextIndexes
+						.get(rubyBaseText)
+						?.get(index - 1);
+					if (rubyText !== undefined) {
+						if (mode === 'html') {
+							return `<ruby><rb>${match}</rb><rp>（</rp><rt>${rubyText}</rt><rp>）</rp></ruby>`;
+						}
+						return `<sub alias="${rubyText}">${match}</sub>`;
+					}
+					return match;
+				},
+			);
+		}
+		processedClauses.push(processedClause);
+		offset += clause.length;
+	}
+
+	if (!isMapEqual(rubyBaseTextOccurences, rubyBaseTextOccurencesInClauses)) {
+		throw new Error(
+			`Ruby text occurences mismatch while converting to ${mode}`,
+		);
+	}
+
+	return processedClauses;
+};
+
+const postprocessHtmlClauses = ({
+	clauses,
+	rubyBaseTexts,
+	rubyBaseTextIndexes,
+	rubyBaseTextOccurences,
+	emphasizedRanges,
+}: {
+	clauses: string[];
+	rubyBaseTexts: Set<string>;
+	rubyBaseTextIndexes: Map<string, Map<number, string>>;
+	rubyBaseTextOccurences: Map<string, number>;
+	emphasizedRanges: [number, number][];
+}) =>
+	postprocessClauses({
+		clauses,
+		mode: 'html',
+		rubyBaseTexts,
+		rubyBaseTextIndexes,
+		rubyBaseTextOccurences,
+		emphasizedRanges,
+	});
+
+const postprocessSsmlClauses = ({
+	clauses,
+	rubyBaseTexts,
+	rubyBaseTextIndexes,
+	rubyBaseTextOccurences,
+	emphasizedRanges,
+}: {
+	clauses: string[];
+	rubyBaseTexts: Set<string>;
+	rubyBaseTextIndexes: Map<string, Map<number, string>>;
+	rubyBaseTextOccurences: Map<string, number>;
+	emphasizedRanges: [number, number][];
+}) =>
+	postprocessClauses({
+		clauses,
+		mode: 'ssml',
+		rubyBaseTexts,
+		rubyBaseTextIndexes,
+		rubyBaseTextOccurences,
+		emphasizedRanges,
+	});
+
 // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: Hard to refactor
 export const formatQuizToSsml = async (text: string) => {
 	const rubyBaseTexts = new Set<string>(
@@ -126,7 +271,23 @@ export const formatQuizToSsml = async (text: string) => {
 		}
 	}
 
-	const tokens = await tokenize(textWithoutRuby);
+	let textWithoutRubyAndEmphasis = '';
+	const emphasizedRanges: [number, number][] = [];
+	const textSplitByEmphasis = textWithoutRuby.split(/(<em>.+?<\/em>)/g);
+	for (const part of textSplitByEmphasis) {
+		const match = part.match(/<em>(.+?)<\/em>/);
+		if (match !== null) {
+			emphasizedRanges.push([
+				textWithoutRubyAndEmphasis.length,
+				textWithoutRubyAndEmphasis.length + match[1].length,
+			]);
+			textWithoutRubyAndEmphasis += match[1];
+		} else {
+			textWithoutRubyAndEmphasis += part;
+		}
+	}
+
+	const tokens = await tokenize(textWithoutRubyAndEmphasis);
 
 	const clauses: string[] = [];
 	for (const [index, token] of tokens.entries()) {
@@ -153,73 +314,20 @@ export const formatQuizToSsml = async (text: string) => {
 		}
 	}
 
-	const rubyBaseTextOccurencesInSsmlClauses = new Map<string, number>(
-		Array.from(rubyBaseTexts).map((baseText) => [baseText, 0]),
-	);
-	const ssmlClauses: string[] = [];
-
-	for (const clause of clauses) {
-		let ssmlClause = clause;
-		for (const rubyBaseText of rubyBaseTexts) {
-			ssmlClause = ssmlClause.replace(
-				new RegExp(escapeRegExp(rubyBaseText), 'g'),
-				(match) => {
-					const index = increment(
-						rubyBaseTextOccurencesInSsmlClauses,
-						rubyBaseText,
-					);
-					const rubyText = rubyBaseTextIndexes
-						.get(rubyBaseText)
-						?.get(index - 1);
-					if (rubyText !== undefined) {
-						return `<sub alias="${rubyText}">${match}</sub>`;
-					}
-					return match;
-				},
-			);
-		}
-		ssmlClauses.push(ssmlClause);
-	}
-
-	if (
-		!isMapEqual(rubyBaseTextOccurences, rubyBaseTextOccurencesInSsmlClauses)
-	) {
-		throw new Error('Ruby text occurences mismatch while converting to SSML');
-	}
-
-	const rubyBaseTextOccurencesInHtmlClauses = new Map<string, number>(
-		Array.from(rubyBaseTexts).map((baseText) => [baseText, 0]),
-	);
-	const htmlClauses: string[] = [];
-
-	for (const clause of clauses) {
-		let htmlClause = clause;
-		for (const rubyBaseText of rubyBaseTexts) {
-			htmlClause = htmlClause.replace(
-				new RegExp(escapeRegExp(rubyBaseText), 'g'),
-				(match) => {
-					const index = increment(
-						rubyBaseTextOccurencesInHtmlClauses,
-						rubyBaseText,
-					);
-					const rubyText = rubyBaseTextIndexes
-						.get(rubyBaseText)
-						?.get(index - 1);
-					if (rubyText !== undefined) {
-						return `<ruby><rb>${match}</rb><rp>（</rp><rt>${rubyText}</rt><rp>）</rp></ruby>`;
-					}
-					return match;
-				},
-			);
-		}
-		htmlClauses.push(htmlClause);
-	}
-
-	if (
-		!isMapEqual(rubyBaseTextOccurences, rubyBaseTextOccurencesInHtmlClauses)
-	) {
-		throw new Error('Ruby text occurences mismatch while converting to HTML');
-	}
+	const htmlClauses = postprocessHtmlClauses({
+		clauses,
+		rubyBaseTexts,
+		rubyBaseTextIndexes,
+		rubyBaseTextOccurences,
+		emphasizedRanges,
+	});
+	const ssmlClauses = postprocessSsmlClauses({
+		clauses,
+		rubyBaseTexts,
+		rubyBaseTextIndexes,
+		rubyBaseTextOccurences,
+		emphasizedRanges,
+	});
 
 	const components: string[][] = [];
 	let isPrevComponentEnd = false;
