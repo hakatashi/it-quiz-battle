@@ -14,7 +14,12 @@ describe('formatQuizToSsml', () => {
 
 	test('converts text with ruby to SSML', async () => {
 		const text = oneLineTrim`
-			関西の私立大学でいわゆる「関関同立」と括られるのは、
+			関西の私立大学でいわゆる「
+			<ruby><rb>関</rb><rp>（</rp><rt>かん</rt><rp>）</rp></ruby>
+			<ruby><rb>関</rb><rp>（</rp><rt>かん</rt><rp>）</rp></ruby>
+			<ruby><rb>同</rb><rp>（</rp><rt>どう</rt><rp>）</rp></ruby>
+			<ruby><rb>立</rb><rp>（</rp><rt>りつ</rt><rp>）</rp></ruby>
+			」と括られるのは、
 			<ruby><rb>関西</rb><rp>（</rp><rt>かんさい</rt><rp>）</rp></ruby>
 			大学、
 			<ruby><rb>関西</rb><rp>（</rp><rt>かんせい</rt><rp>）</rp></ruby>
@@ -26,8 +31,8 @@ describe('formatQuizToSsml', () => {
 			'私立大学で',
 			'いわゆる',
 			'「',
-			'関関',
-			'同立',
+			'<ruby><rb>関</rb><rp>（</rp><rt>かん</rt><rp>）</rp></ruby><ruby><rb>関</rb><rp>（</rp><rt>かん</rt><rp>）</rp></ruby>',
+			'<ruby><rb>同</rb><rp>（</rp><rt>どう</rt><rp>）</rp></ruby><ruby><rb>立</rb><rp>（</rp><rt>りつ</rt><rp>）</rp></ruby>',
 			'」',
 			'と',
 			'括られるのは',
@@ -50,9 +55,9 @@ describe('formatQuizToSsml', () => {
 				<mark name="c2"/>
 				「
 				<mark name="c3"/>
-				関関
+				<sub alias="かん">関</sub><sub alias="かん">関</sub>
 				<mark name="c4"/>
-				同立
+				<sub alias="どう">同</sub><sub alias="りつ">立</sub>
 				<mark name="c5"/>
 				」
 				<mark name="c6"/>

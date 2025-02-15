@@ -6,7 +6,7 @@ import type {Quiz} from '~/lib/schema';
 import {initializeApp} from 'firebase-admin/app';
 import {getFirestore, type CollectionReference} from 'firebase-admin/firestore';
 import {getStorage} from 'firebase-admin/storage';
-import {range} from 'lodash-es';
+import {escapeRegExp, range} from 'lodash-es';
 import {fileURLToPath} from 'node:url';
 
 const logger = console;
@@ -62,21 +62,71 @@ const isFuzokugo = (token: KuromojiToken) =>
 
 const CLAUSE_COMPONENTS_END_REGEX = /[、。?？]$/;
 
+const increment = <T>(map: Map<T, number>, key: T, by = 1) => {
+	const newValue = (map.get(key) ?? 0) + by;
+	map.set(key, newValue);
+	return newValue;
+};
+
+const isMapEqual = <K, V>(map1: Map<K, V>, map2: Map<K, V>) => {
+	if (map1.size !== map2.size) {
+		return false;
+	}
+	for (const [key, value] of map1) {
+		if (map2.get(key) !== value) {
+			return false;
+		}
+	}
+	return true;
+};
+
 // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: Hard to refactor
 export const formatQuizToSsml = async (text: string) => {
-	const normalizedQuestion = text
-		.replaceAll(
-			/<ruby><rb>(.+?)<\/rb><rp>.+?<\/rp><rt>(.+?)<\/rt><rp>.+?<\/rp><\/ruby>/g,
-			'<sub alias="$2">$1</sub>',
-		)
-		.replaceAll(
-			/<em>(.+?)<\/em>/g,
-			'<emphasis level="strong"><prosody pitch="+3st">$1</prosody></emphasis>',
-		)
-		.replaceAll(/\(.+?\)/g, '')
-		.replaceAll(/（.+?）/g, '');
+	const rubyBaseTexts = new Set<string>(
+		Array.from(text.matchAll(/<rb>(.+?)<\/rb>/g)).map((match) => match[1]),
+	);
+	const rubyBaseTextOccurences = new Map<string, number>(
+		Array.from(rubyBaseTexts).map((baseText) => [baseText, 0]),
+	);
+	const rubyBaseTextIndexes = new Map<string, Map<number, string>>(
+		Array.from(rubyBaseTexts).map((baseText) => [baseText, new Map()]),
+	);
 
-	const tokens = await tokenize(normalizedQuestion);
+	const textSplitByRubies = text.split(/(<ruby>.+?<\/ruby>)/g);
+	let textWithoutRuby = '';
+	for (const part of textSplitByRubies) {
+		if (part.startsWith('<ruby>')) {
+			const baseText = part.match(/<rb>(.+?)<\/rb>/)?.[1];
+			const rubyText = part.match(/<rt>(.+?)<\/rt>/)?.[1];
+			if (baseText === undefined || rubyText === undefined) {
+				throw new Error('Base text or ruby text is undefined');
+			}
+			const newIndex = increment(rubyBaseTextOccurences, baseText);
+			rubyBaseTextIndexes.get(baseText)?.set(newIndex - 1, rubyText);
+
+			for (const rubyBaseText of rubyBaseTexts) {
+				if (baseText === rubyBaseText) {
+					continue;
+				}
+				const matches = Array.from(
+					baseText.matchAll(new RegExp(escapeRegExp(rubyBaseText), 'g')),
+				);
+				increment(rubyBaseTextOccurences, rubyBaseText, matches.length);
+			}
+
+			textWithoutRuby += baseText;
+		} else {
+			for (const rubyBaseText of rubyBaseTexts) {
+				const matches = Array.from(
+					part.matchAll(new RegExp(escapeRegExp(rubyBaseText), 'g')),
+				);
+				increment(rubyBaseTextOccurences, rubyBaseText, matches.length);
+			}
+			textWithoutRuby += part;
+		}
+	}
+
+	const tokens = await tokenize(textWithoutRuby);
 
 	const clauses: string[] = [];
 	for (const [index, token] of tokens.entries()) {
@@ -103,9 +153,77 @@ export const formatQuizToSsml = async (text: string) => {
 		}
 	}
 
+	const rubyBaseTextOccurencesInSsmlClauses = new Map<string, number>(
+		Array.from(rubyBaseTexts).map((baseText) => [baseText, 0]),
+	);
+	const ssmlClauses: string[] = [];
+
+	for (const clause of clauses) {
+		let ssmlClause = clause;
+		for (const rubyBaseText of rubyBaseTexts) {
+			ssmlClause = ssmlClause.replace(
+				new RegExp(escapeRegExp(rubyBaseText), 'g'),
+				(match) => {
+					const index = increment(
+						rubyBaseTextOccurencesInSsmlClauses,
+						rubyBaseText,
+					);
+					const rubyText = rubyBaseTextIndexes
+						.get(rubyBaseText)
+						?.get(index - 1);
+					if (rubyText !== undefined) {
+						return `<sub alias="${rubyText}">${match}</sub>`;
+					}
+					return match;
+				},
+			);
+		}
+		ssmlClauses.push(ssmlClause);
+	}
+
+	if (
+		!isMapEqual(rubyBaseTextOccurences, rubyBaseTextOccurencesInSsmlClauses)
+	) {
+		throw new Error('Ruby text occurences mismatch while converting to SSML');
+	}
+
+	const rubyBaseTextOccurencesInHtmlClauses = new Map<string, number>(
+		Array.from(rubyBaseTexts).map((baseText) => [baseText, 0]),
+	);
+	const htmlClauses: string[] = [];
+
+	for (const clause of clauses) {
+		let htmlClause = clause;
+		for (const rubyBaseText of rubyBaseTexts) {
+			htmlClause = htmlClause.replace(
+				new RegExp(escapeRegExp(rubyBaseText), 'g'),
+				(match) => {
+					const index = increment(
+						rubyBaseTextOccurencesInHtmlClauses,
+						rubyBaseText,
+					);
+					const rubyText = rubyBaseTextIndexes
+						.get(rubyBaseText)
+						?.get(index - 1);
+					if (rubyText !== undefined) {
+						return `<ruby><rb>${match}</rb><rp>（</rp><rt>${rubyText}</rt><rp>）</rp></ruby>`;
+					}
+					return match;
+				},
+			);
+		}
+		htmlClauses.push(htmlClause);
+	}
+
+	if (
+		!isMapEqual(rubyBaseTextOccurences, rubyBaseTextOccurencesInHtmlClauses)
+	) {
+		throw new Error('Ruby text occurences mismatch while converting to HTML');
+	}
+
 	const components: string[][] = [];
 	let isPrevComponentEnd = false;
-	for (const clause of clauses) {
+	for (const clause of ssmlClauses) {
 		if (components.length === 0 || isPrevComponentEnd) {
 			components.push([clause]);
 		} else {
@@ -127,7 +245,7 @@ export const formatQuizToSsml = async (text: string) => {
 
 	const ssml = `<speak>${spannedQuestionText}</speak>`;
 
-	return {clauses, ssml};
+	return {clauses: htmlClauses, ssml};
 };
 
 const fetchQuiz = async () => {
