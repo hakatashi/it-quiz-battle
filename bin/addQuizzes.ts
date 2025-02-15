@@ -7,6 +7,7 @@ import {initializeApp} from 'firebase-admin/app';
 import {getFirestore, type CollectionReference} from 'firebase-admin/firestore';
 import {getStorage} from 'firebase-admin/storage';
 import {range} from 'lodash-es';
+import {fileURLToPath} from 'node:url';
 
 const logger = console;
 
@@ -133,7 +134,7 @@ const fetchQuiz = async () => {
 	const response = await fetch(IT_QUIZ_URL);
 	const data = await response.json();
 
-	for (const quizIndex of range(1013, 1014)) {
+	for (const quizIndex of range(1000, 1030)) {
 		const quizId = `it-${quizIndex.toString().padStart(6, '0')}`;
 
 		const quizDoc = await Quizzes.doc(quizId).get();
@@ -173,6 +174,6 @@ const fetchQuiz = async () => {
 	}
 };
 
-if (require.main === module) {
+if (fileURLToPath(import.meta.url) === process.argv[1]) {
 	fetchQuiz();
 }

@@ -30,7 +30,8 @@ describe('formatQuizToSsml', () => {
 			'同立',
 			'」',
 			'と',
-			'括られるのは、',
+			'括られるのは',
+			'、',
 			'<ruby><rb>関西</rb><rp>（</rp><rt>かんさい</rt><rp>）</rp></ruby>大学',
 			'、',
 			'<ruby><rb>関西</rb><rp>（</rp><rt>かんせい</rt><rp>）</rp></ruby>学院大学',
@@ -57,22 +58,24 @@ describe('formatQuizToSsml', () => {
 				<mark name="c6"/>
 				と
 				<mark name="c7"/>
-				括られるのは、
+				括られるのは
 				<mark name="c8"/>
-				<sub alias="かんさい">関西</sub>大学
+				、
 				<mark name="c9"/>
-				、
+				<sub alias="かんさい">関西</sub>大学
 				<mark name="c10"/>
-				<sub alias="かんせい">関西</sub>学院大学
-				<mark name="c11"/>
 				、
+				<mark name="c11"/>
+				<sub alias="かんせい">関西</sub>学院大学
 				<mark name="c12"/>
-				同志社大学と
+				、
 				<mark name="c13"/>
-				どこでしょう
+				同志社大学と
 				<mark name="c14"/>
-				？
+				どこでしょう
 				<mark name="c15"/>
+				？
+				<mark name="c16"/>
 			</speak>
 		`);
 	});
