@@ -14,6 +14,7 @@
 		"fix": "npm run format && npm run lint -- --unsafe",
 		"test": "concurrently \"npm run dev:firebase\" \"npm run test:vitest\" --names firebase,vitest --kill-others --success first",
 		"test:vitest": "wait-on http-get://localhost:8080 http-get://localhost:5000 http-get://localhost:9099 && vitest",
+		"test:vitest:html": "wait-on http-get://localhost:8080 http-get://localhost:5000 http-get://localhost:9099 && vitest run --reporter=html --outputFile=vitest-report/index.html & vite preview --outDir vitest-report --open",
 		"prepare": "husky",
 		"install": "cd functions && npm install"
 	},
@@ -41,6 +42,7 @@
 		"@testing-library/user-event": "^14.6.1",
 		"@types/common-tags": "^1.8.4",
 		"@types/lodash-es": "^4.17.12",
+		"@vitest/ui": "^3.0.5",
 		"common-tags": "^1.8.2",
 		"dotenv": "^16.4.7",
 		"firebase-admin": "^13.1.0",
