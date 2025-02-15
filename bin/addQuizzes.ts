@@ -162,7 +162,7 @@ const postprocessClauses = ({
 						if (mode === 'html') {
 							return `<ruby><rb>${match}</rb><rp>（</rp><rt>${rubyText}</rt><rp>）</rp></ruby>`;
 						}
-						return `<sub alias="${rubyText}">${match}</sub>`;
+						return rubyText;
 					}
 					return match;
 				},
@@ -360,13 +360,13 @@ const fetchQuiz = async () => {
 	const response = await fetch(IT_QUIZ_URL);
 	const data = await response.json();
 
-	for (const quizIndex of range(1000, 1030)) {
+	for (const quizIndex of range(1013, 1014)) {
 		const quizId = `it-${quizIndex.toString().padStart(6, '0')}`;
 
 		const quizDoc = await Quizzes.doc(quizId).get();
 		if (quizDoc.exists) {
 			logger.log(`Quiz ${quizIndex} already exists`);
-			continue;
+			// continue;
 		}
 
 		logger.log(`Processing quiz ${quizIndex}`);

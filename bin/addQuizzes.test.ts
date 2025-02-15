@@ -55,9 +55,9 @@ describe('formatQuizToSsml', () => {
 				<mark name="c2"/>
 				「
 				<mark name="c3"/>
-				<sub alias="かん">関</sub><sub alias="かん">関</sub>
+				かんかん
 				<mark name="c4"/>
-				<sub alias="どう">同</sub><sub alias="りつ">立</sub>
+				どうりつ
 				<mark name="c5"/>
 				」
 				<mark name="c6"/>
@@ -67,11 +67,11 @@ describe('formatQuizToSsml', () => {
 				<mark name="c8"/>
 				、
 				<mark name="c9"/>
-				<sub alias="かんさい">関西</sub>大学
+				かんさい大学
 				<mark name="c10"/>
 				、
 				<mark name="c11"/>
-				<sub alias="かんせい">関西</sub>学院大学
+				かんせい学院大学
 				<mark name="c12"/>
 				、
 				<mark name="c13"/>

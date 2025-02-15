@@ -1,6 +1,7 @@
 import {createMemo, Show} from 'solid-js';
 import styles from './QuizStatement.module.css';
 import type {Timepoint} from './schema.ts';
+import DomPurify from 'dompurify';
 
 interface QuizStatementProps {
 	clauses: string[];
@@ -14,7 +15,7 @@ const extractMarkIndex = (markName: string | null | undefined) =>
 		: Number.parseInt(markName.match(/c(\d+)/)?.[1] ?? '');
 
 interface ClauseInformation {
-	text: string;
+	html: string;
 	duration: number;
 	hiddenRatio: number;
 }
@@ -49,8 +50,13 @@ const QuizStatement = (props: QuizStatementProps) => {
 				hiddenRatio = 1 - (props.ellapsedTime - offset) / duration;
 			}
 
+			const clauseHtml = DomPurify.sanitize(clause, {
+				// biome-ignore lint/style/useNamingConvention: External
+				ALLOWED_TAGS: ['ruby', 'rb', 'rt', 'rp', 'em'],
+			});
+
 			outputs.push({
-				text: clause,
+				html: clauseHtml,
 				duration,
 				hiddenRatio,
 			});
@@ -74,9 +80,8 @@ const QuizStatement = (props: QuizStatementProps) => {
 						style={{
 							'--hidden-ratio': clauseInfo.hiddenRatio,
 						}}
-					>
-						{clauseInfo.text}
-					</span>
+						innerHTML={clauseInfo.html}
+					/>
 				</Show>
 			))}
 		</div>
