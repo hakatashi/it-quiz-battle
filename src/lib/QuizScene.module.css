@@ -1,0 +1,25 @@
+.quiz_scene {
+	display: flex;
+	flex-direction: column;
+	height: 100%;
+}
+
+.header_area {
+	flex: 0 0 auto;
+}
+
+.question_area {
+	flex: 1 1 auto;
+	overflow-y: auto;
+}
+
+.answer_area {
+	flex: 0 0 auto;
+}
+
+.answer_button {
+	display: block;
+	margin: 3rem auto 3rem;
+	width: 10rem;
+	height: 10rem;
+}

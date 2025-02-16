@@ -13,6 +13,9 @@
 			"correctness": {
 				"noNodejsModules": "off",
 				"useJsxKeyInIterable": "off"
+			},
+			"performance": {
+				"useTopLevelRegex": "off"
 			}
 		}
 	},

@@ -23,7 +23,7 @@ const storage = getStorage(app);
 if (import.meta.env.DEV && !isServer) {
 	connectFirestoreEmulator(db, 'localhost', 8080);
 	connectStorageEmulator(storage, 'localhost', 9199);
-	connectAuthEmulator(auth, 'http://localhost:9099');
+	connectAuthEmulator(auth, 'http://localhost:9099', {disableWarnings: true});
 }
 
 const Quizzes = collection(db, 'quizzes') as CollectionReference<Quiz>;
