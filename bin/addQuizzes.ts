@@ -389,6 +389,7 @@ const fetchQuiz = async () => {
 		await Quizzes.doc(quizId).set({
 			type: 'it',
 			index: quizIndex,
+			lastUsedGame: Number.NEGATIVE_INFINITY,
 			question: quiz.question,
 			answer: quiz.answer,
 			alternativeAnswers: quiz.alternativeAnswers ?? [],
