@@ -30,7 +30,7 @@
 		"solid-firebase": "^0.3.0",
 		"solid-js": "^1.9.4",
 		"vinxi": "^0.4.3",
-		"vite-plugin-solid": "^2.11.1"
+		"vite-plugin-solid": "^2.11.2"
 	},
 	"engines": {
 		"node": ">=22"
